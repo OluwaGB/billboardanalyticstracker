@@ -19,7 +19,7 @@ export default function Billboards() {
     [cityFilter]
   );
 
-  const baseUrl = window.location.origin;
+  const baseUrl = `${window.location.protocol}//${window.location.host}`;
 
   const handleSimulate = (billboardId: string) => {
     logScanEvent(billboardId, "simulation");

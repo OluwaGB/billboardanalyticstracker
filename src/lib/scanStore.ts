@@ -91,6 +91,18 @@ export function getScanEvents(): ScanEvent[] {
   return seeded;
 }
 
+export function detectDeviceType(ua: string = navigator.userAgent): string {
+  if (/iphone/i.test(ua)) return "iPhone";
+  if (/ipad/i.test(ua)) return "iPad";
+  if (/android.*mobile/i.test(ua)) return "Android Phone";
+  if (/android/i.test(ua)) return "Android Tablet";
+  if (/windows phone/i.test(ua)) return "Windows Phone";
+  if (/macintosh|mac os x/i.test(ua)) return "Mac";
+  if (/windows/i.test(ua)) return "Windows PC";
+  if (/linux/i.test(ua)) return "Linux";
+  return "Unknown Device";
+}
+
 export function logScanEvent(
   billboardId: string,
   source: "qr" | "simulation",
@@ -103,6 +115,8 @@ export function logScanEvent(
     timestamp: new Date().toISOString(),
     isConversion,
     source,
+    userAgent: navigator.userAgent,
+    deviceType: detectDeviceType(),
     isBot: false,
     isDuplicate: false,
     weather: ["Sunny", "Partly Cloudy", "Cloudy", "Hot & Humid"][Math.floor(Math.random() * 4)],
@@ -201,4 +215,27 @@ export function getDailyScanData(billboardId?: string) {
   });
 
   return Object.entries(dailyMap).map(([date, data]) => ({ date, ...data }));
+}
+
+export function getRecentRealScans(billboardId: string, limit = 10) {
+  const events = getScanEvents();
+  return events
+    .filter((e) => e.billboardId === billboardId && e.source !== "seeded" && !e.isBot)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, limit);
+}
+
+export function getDeviceBreakdown(billboardId?: string) {
+  const events = getScanEvents();
+  const relevant = (billboardId
+    ? events.filter((e) => e.billboardId === billboardId)
+    : events
+  ).filter((e) => !e.isBot && e.source !== "seeded");
+
+  const counts: Record<string, number> = {};
+  relevant.forEach((e) => {
+    const d = e.deviceType || "Unknown";
+    counts[d] = (counts[d] || 0) + 1;
+  });
+  return Object.entries(counts).map(([device, count]) => ({ device, count }));
 }

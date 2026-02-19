@@ -33,6 +33,7 @@ export interface ScanEvent {
   isConversion: boolean; // whether user clicked the advertiser link
   source: "qr" | "simulation" | "seeded";
   userAgent?: string;
+  deviceType?: string; // e.g. "iPhone", "Android", "Desktop"
   isBot: boolean;
   isDuplicate: boolean;
   weather?: string;

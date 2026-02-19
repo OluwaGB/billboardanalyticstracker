@@ -1,10 +1,10 @@
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ExternalLink, MapPin, CheckCircle2, QrCode } from "lucide-react";
+import { ArrowLeft, ExternalLink, MapPin, CheckCircle2, QrCode, Smartphone } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { billboards } from "@/lib/data";
-import { logScanEvent, logConversion } from "@/lib/scanStore";
+import { logScanEvent, logConversion, detectDeviceType } from "@/lib/scanStore";
 
 export default function ScanLanding() {
   const { id } = useParams<{ id: string }>();
@@ -100,7 +100,7 @@ export default function ScanLanding() {
         <div className="px-6 pb-6 flex items-center gap-3">
           <div className="rounded bg-background p-1.5 border border-border">
             <QRCodeSVG
-              value={window.location.href}
+              value={`${window.location.protocol}//${window.location.host}/scan/${billboard.id}`}
               size={48}
               bgColor="transparent"
               fgColor="hsl(210 100% 56%)"
@@ -110,6 +110,11 @@ export default function ScanLanding() {
           <div className="text-xs text-muted-foreground">
             Billboard ID: <span className="font-mono text-foreground">{billboard.id}</span>
             <br />Scan tracked at {new Date().toLocaleTimeString("en-NG")}
+            <br />
+            <span className="flex items-center gap-1 mt-1">
+              <Smartphone className="h-3 w-3" />
+              {detectDeviceType()}
+            </span>
           </div>
         </div>
       </div>
