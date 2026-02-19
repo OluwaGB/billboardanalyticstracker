@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, TrendingUp, QrCode, Target, ChevronRight, AlertTriangle, CheckCircle2, Cloud, Car } from "lucide-react";
+import { BarChart3, TrendingUp, QrCode, Target, ChevronRight, AlertTriangle, CheckCircle2, Cloud, Car, Smartphone, Monitor, Tablet } from "lucide-react";
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from "recharts";
 import { billboards } from "@/lib/data";
-import { getScanEvents, getBillboardStats, getDailyScanData, getHourlyScanData } from "@/lib/scanStore";
+import { getScanEvents, getBillboardStats, getDailyScanData, getHourlyScanData, getDeviceBreakdown } from "@/lib/scanStore";
 import Footer from "@/components/Footer";
 
 type TimeRange = "hourly" | "daily";
@@ -58,6 +58,14 @@ export default function Dashboard() {
         .sort((a, b) => b.scans - a.scans),
     [allStats]
   );
+
+  const deviceData = useMemo(() => getDeviceBreakdown(), []);
+  const DEVICE_COLORS = ["hsl(210 100% 56%)", "hsl(142 71% 45%)", "hsl(38 92% 50%)", "hsl(187 100% 50%)", "hsl(270 60% 60%)"];
+  const getDeviceIcon = (device: string) => {
+    if (device.includes("iPhone") || device.includes("Android Phone") || device.includes("Windows Phone")) return Smartphone;
+    if (device.includes("iPad") || device.includes("Tablet")) return Tablet;
+    return Monitor;
+  };
 
   // Traffic & Weather enrichment (simulated)
   const enrichmentInsights = [
@@ -312,6 +320,55 @@ export default function Dashboard() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Device Type Breakdown */}
+        <div className="rounded-xl border border-border bg-card p-5 mt-8" style={{ boxShadow: "var(--shadow-card)" }}>
+          <h2 className="font-semibold text-foreground text-sm mb-1 flex items-center gap-2">
+            <Smartphone className="h-4 w-4 text-electric-blue" />
+            Scanner Device Types
+          </h2>
+          <p className="text-xs text-muted-foreground mb-5">Device breakdown from real QR scans and simulated events</p>
+          {deviceData.length === 0 ? (
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              No real scan data yet. Use "Simulate Scan" on the Billboards page or scan a QR code to populate this chart.
+            </div>
+          ) : (
+            <div className="flex flex-col lg:flex-row gap-6 items-center">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={deviceData}
+                    dataKey="count"
+                    nameKey="device"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={({ device, percent }: { device: string; percent: number }) => `${device} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {deviceData.map((_, i) => (
+                      <Cell key={i} fill={DEVICE_COLORS[i % DEVICE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-col gap-2 min-w-[200px]">
+                {[...deviceData].sort((a, b) => b.count - a.count).map(({ device, count }, i) => {
+                  const Icon = getDeviceIcon(device);
+                  return (
+                    <div key={device} className="flex items-center gap-3">
+                      <div className="h-3 w-3 rounded-full shrink-0" style={{ background: DEVICE_COLORS[i % DEVICE_COLORS.length] }} />
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-sm text-foreground flex-1">{device}</span>
+                      <span className="text-sm font-bold text-foreground">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <Footer />

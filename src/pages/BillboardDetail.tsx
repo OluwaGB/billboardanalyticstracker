@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useMemo, useState } from "react";
-import { ArrowLeft, MapPin, Calendar, Users, TrendingUp, QrCode, ExternalLink } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, TrendingUp, QrCode, ExternalLink, Smartphone, Monitor, Tablet } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { billboards } from "@/lib/data";
-import { getScanEvents, getBillboardStats, getDailyScanData, getHourlyScanData } from "@/lib/scanStore";
+import { getScanEvents, getBillboardStats, getDailyScanData, getHourlyScanData, getRecentRealScans, getDeviceBreakdown } from "@/lib/scanStore";
 import Footer from "@/components/Footer";
 
 export default function BillboardDetail() {
@@ -21,6 +21,8 @@ export default function BillboardDetail() {
   const dailyData = useMemo(() => (billboard ? getDailyScanData(billboard.id) : []), [billboard]);
   const hourlyData = useMemo(() => (billboard ? getHourlyScanData(billboard.id, 1) : []), [billboard]);
   const chartData = chartMode === "daily" ? dailyData : hourlyData;
+  const recentScans = useMemo(() => (billboard ? getRecentRealScans(billboard.id, 15) : []), [billboard]);
+  const deviceBreakdown = useMemo(() => (billboard ? getDeviceBreakdown(billboard.id) : []), [billboard]);
 
   // Conversion funnel
   const funnelData = stats
@@ -43,7 +45,14 @@ export default function BillboardDetail() {
   }
 
   const { campaign } = billboard;
-  const scanUrl = `${window.location.origin}/scan/${billboard.id}`;
+
+  const getDeviceIcon = (device: string) => {
+    if (device.includes("iPhone") || device.includes("Android Phone") || device.includes("Windows Phone")) return Smartphone;
+    if (device.includes("iPad") || device.includes("Tablet")) return Tablet;
+    return Monitor;
+  };
+
+  const scanUrl = `${window.location.protocol}//${window.location.host}/scan/${billboard.id}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -222,6 +231,83 @@ export default function BillboardDetail() {
                 <p className="text-xs text-muted-foreground leading-relaxed">{campaign.description}</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Device Breakdown + Recent Real Scans */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-8">
+          {/* Device Breakdown */}
+          <div className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+            <h2 className="font-semibold text-foreground text-sm mb-1 flex items-center gap-2">
+              <Smartphone className="h-4 w-4 text-electric-blue" />
+              Device Breakdown
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">Device types detected from real QR scans</p>
+            {deviceBreakdown.length === 0 ? (
+              <div className="text-xs text-muted-foreground text-center py-6">
+                No real scan data yet. Use "Simulate Scan" or scan the QR code to capture device data.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {deviceBreakdown
+                  .sort((a, b) => b.count - a.count)
+                  .map(({ device, count }) => {
+                    const Icon = getDeviceIcon(device);
+                    const total = deviceBreakdown.reduce((s, d) => s + d.count, 0);
+                    const pct = total > 0 ? ((count / total) * 100).toFixed(0) : 0;
+                    return (
+                      <div key={device} className="flex items-center gap-3">
+                        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="flex-1">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-foreground font-medium">{device}</span>
+                            <span className="text-muted-foreground">{count} ({pct}%)</span>
+                          </div>
+                          <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                            <div className="h-full bg-electric-blue rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+
+          {/* Recent Real Scans */}
+          <div className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+            <h2 className="font-semibold text-foreground text-sm mb-1">Recent Scan Events</h2>
+            <p className="text-xs text-muted-foreground mb-4">Live scan log from QR and simulated interactions</p>
+            {recentScans.length === 0 ? (
+              <div className="text-xs text-muted-foreground text-center py-6">
+                No real scans recorded yet. Scan the QR code or click "Simulate Scan" to see live data.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {recentScans.map((scan) => {
+                  const Icon = getDeviceIcon(scan.deviceType || "");
+                  return (
+                    <div key={scan.id} className="flex items-start gap-3 rounded-lg bg-secondary/40 border border-border/50 p-2.5">
+                      <Icon className="h-4 w-4 text-electric-blue shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-foreground">{scan.deviceType || "Unknown Device"}</span>
+                          <span className={`text-[10px] font-medium ${scan.isConversion ? "text-success-green" : "text-muted-foreground"}`}>
+                            {scan.isConversion ? "✓ Converted" : scan.source === "qr" ? "QR Scan" : "Simulated"}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {new Date(scan.timestamp).toLocaleString("en-NG", {
+                            month: "short", day: "numeric",
+                            hour: "2-digit", minute: "2-digit", second: "2-digit"
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
