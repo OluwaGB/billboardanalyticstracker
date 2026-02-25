@@ -138,7 +138,7 @@ export default function Index() {
             { step: "03", title: "Analytics Updated", desc: "Dashboard KPIs, charts, and campaign metrics update instantly to reflect the new engagement." },
           ].map((item) => (
             <div key={item.step} className="relative rounded-xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-card)" }}>
-              <div className="text-4xl font-black text-electric-blue/20 mb-3">{item.step}</div>
+              <div className="text-4xl font-black text-electric-blue/20 mb-3 transition-transform duration-300 hover:animate-bounce cursor-default inline-block">{item.step}</div>
               <h3 className="font-semibold text-foreground mb-2">{item.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
             </div>
