@@ -156,7 +156,7 @@ export default function Index() {
           {features.map((f) => {
             const Icon = f.icon;
             return (
-              <div key={f.title} className="flex gap-4 rounded-xl border border-border bg-card p-5 hover:border-electric-blue/30 transition-colors" style={{ boxShadow: "var(--shadow-card)" }}>
+              <div key={f.title} className="flex gap-4 rounded-xl border border-border bg-card p-5 hover:border-electric-blue/30 hover:-translate-y-1 hover:shadow-glow transition-all duration-300" style={{ boxShadow: "var(--shadow-card)" }}>
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-${f.color}/10`}>
                   <Icon className={`h-5 w-5 text-${f.color}`} />
                 </div>
